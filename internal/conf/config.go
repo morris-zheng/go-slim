@@ -7,6 +7,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type Logger struct {
+	Level string `yaml:"level"`
+}
+
 type Mysql struct {
 	Host     string `yaml:"host"`
 	Port     int    `yaml:"port"`
@@ -16,10 +20,11 @@ type Mysql struct {
 }
 
 type Config struct {
-	Env   string `yaml:"env"`
-	Debug bool   `yaml:"debug"`
-	Port  int    `yaml:"port"`
-	Mysql Mysql  `yaml:"mysql"`
+	Env    string `yaml:"env"`
+	Debug  bool   `yaml:"debug"`
+	Port   int    `yaml:"port"`
+	Logger Logger `yaml:"logger"`
+	Mysql  Mysql  `yaml:"mysql"`
 }
 
 func Load(path string) *Config {
@@ -27,10 +32,13 @@ func Load(path string) *Config {
 	if err != nil {
 		log.Fatal("read config err", err)
 	}
+
 	var c Config
+
 	err = yaml.Unmarshal(cb, &c)
 	if err != nil {
 		log.Fatal("unmarshal config err", err)
 	}
+
 	return &c
 }

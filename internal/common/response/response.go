@@ -6,18 +6,32 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Success(ctx *gin.Context, data any) {
-	ctx.JSON(http.StatusOK, data)
+type Response struct {
+	Data     any
+	Msg      string
+	Code     int
+	HttpCode int
 }
 
-type FailStruct struct {
-	Msg  string `json:"msg"`
-	Code int    `json:"code"`
+func Success(ctx *gin.Context, resp Response) {
+	if resp.HttpCode == 0 {
+		resp.HttpCode = http.StatusOK
+	}
+
+	ctx.JSON(resp.HttpCode, resp.Data)
 }
 
-func Fail(ctx *gin.Context, msg string, code int) {
-	ctx.JSON(http.StatusBadRequest, FailStruct{
-		Msg:  msg,
-		Code: code,
-	})
+func Fail(ctx *gin.Context, resp Response) {
+	if resp.HttpCode == 0 {
+		resp.HttpCode = http.StatusBadRequest
+	}
+
+	r := struct {
+		Msg  string `json:"msg"`
+		Code int    `json:"code"`
+	}{
+		Msg:  resp.Msg,
+		Code: resp.Code,
+	}
+	ctx.JSON(resp.HttpCode, r)
 }

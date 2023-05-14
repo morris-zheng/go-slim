@@ -2,6 +2,9 @@ debug: true
 env: local
 port: 3000
 
+logger:
+  level: "DEBUG"
+
 mysql:
   host: "localhost"
   port: 3306

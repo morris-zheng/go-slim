@@ -1,18 +1,19 @@
 package user
 
 import (
-	"github.com/morris-zheng/go-slim/internal/domain"
 	"time"
+
+	"github.com/morris-zheng/go-slim/internal/domain"
 )
 
-type Service struct {
-	ctx  *domain.ServiceContext
+type UseCase struct {
+	svc  *domain.ServiceContext
 	repo *Repo
 }
 
-func NewService(svc *domain.ServiceContext) *Service {
-	return &Service{
-		ctx:  svc,
+func NewUseCase(svc *domain.ServiceContext) *UseCase {
+	return &UseCase{
+		svc:  svc,
 		repo: NewRepo(svc),
 	}
 }
@@ -23,51 +24,60 @@ type QueryParams struct {
 	// other condition
 }
 
-func (s *Service) Query(qp QueryParams) ([]User, int64, error) {
+func (s *UseCase) Query(qp QueryParams) ([]User, int64, error) {
 	var ul []User
 	var total int64
 	db := s.repo.DB.Model(&User{})
+
 	if qp.Limit != 0 {
 		if err := db.Count(&total).Error; err != nil {
 			return []User{}, 0, err
 		}
+
 		db = db.Limit(qp.Limit).Offset((qp.Page - 1) * qp.Limit)
 	}
 
 	if err := db.Find(&ul).Error; err != nil {
 		return []User{}, 0, err
 	}
+
 	return ul, total, nil
 }
 
-func (s *Service) Get(id int) (User, error) {
+func (s *UseCase) Get(id int) (User, error) {
 	u := User{}
 	if err := s.repo.DB.Where("id=?", id).First(&u).Error; err != nil {
 		return u, err
 	}
+
 	return u, nil
 }
 
-func (s *Service) Create(u User) error {
+func (s *UseCase) Create(u User) error {
 	u.CreateTime = time.Now()
 	u.UpdateTime = time.Now()
+
 	if err := s.repo.DB.Create(&u).Error; err != nil {
 		return err
 	}
+
 	return nil
 }
 
-func (s *Service) Update(u User) error {
+func (s *UseCase) Update(u User) error {
 	u.UpdateTime = time.Now()
+
 	if err := s.repo.DB.Where("id=?", u.Id).Save(&u).Error; err != nil {
 		return err
 	}
+
 	return nil
 }
 
-func (s *Service) Delete(id int) error {
+func (s *UseCase) Delete(id int) error {
 	if err := s.repo.DB.Where("id=?", id).Delete(User{}).Error; err != nil {
 		return err
 	}
+
 	return nil
 }

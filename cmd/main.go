@@ -2,56 +2,33 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"time"
-
+	"flag"
 	"github.com/morris-zheng/go-slim/internal/conf"
 	"github.com/morris-zheng/go-slim/internal/delivery"
 	"github.com/morris-zheng/go-slim/internal/domain"
-
-	"github.com/gin-gonic/gin"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
-	// load config
-	c := conf.Load("config.yaml")
+	configPath := flag.String("f", "config.yaml", "config file path")
+	flag.Parse()
+	c := conf.Load(*configPath)
 
-	// gin router
-	r := gin.New()
-	r.Use(gin.Logger())
-	r.Use(gin.Recovery())
-
-	// new service context
 	svc := domain.NewServiceContext(c)
-	// register delivery
-	delivery.Register(svc, r)
 
-	// server
-	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", c.Port),
-		Handler: r,
-	}
-
-	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen: %s\n", err)
-		}
-	}()
+	server := delivery.NewHttpServer(svc)
+	server.Register(svc)
 
 	quit := make(chan os.Signal)
-	signal.Notify(quit, os.Interrupt)
-	<-quit
-	log.Println("Shutdown Server ...")
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatal("Server Shutdown:", err)
-	}
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		<-quit
+		cancel()
+	}()
 
-	log.Println("Server exiting")
+	server.Run(ctx, svc)
 }

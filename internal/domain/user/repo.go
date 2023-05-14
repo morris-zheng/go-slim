@@ -10,8 +10,8 @@ type Repo struct {
 	DB *gorm.DB
 }
 
-func NewRepo(ctx *domain.ServiceContext) *Repo {
+func NewRepo(svc *domain.ServiceContext) *Repo {
 	return &Repo{
-		DB: ctx.DB,
+		DB: svc.DB,
 	}
 }
